@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Inagle 検索</title>
+  <style>
+    :root{
+      /* Light + Cool theme */
+      --bg:#eef3ff;
+
+      --panel:#ffffff;
+      --panel2:#f6f9ff;
+
+      --text:#0f172a;
+      --muted:#475569;
+
+      --border:#d7e0f0;
+
+      --accent:#2563eb;
+      --accent2:#10b981;
+
+      --danger:#e11d48;
+      --warn:#f59e0b;
+
+      --shadow: 0 10px 26px rgba(15, 23, 42, .10);
+      --radius: 14px;
+    }
+
+    *{box-sizing:border-box}
+
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Segoe UI", Arial, sans-serif;
+      background:
+        radial-gradient(1200px 800px at 20% -10%, rgba(37,99,235,.12), transparent 60%),
+        radial-gradient(900px 700px at 90% 10%, rgba(16,185,129,.10), transparent 55%),
+        var(--bg);
+      color:var(--text);
+    }
+
+    header{
+      position:sticky; top:0; z-index:10;
+      background: rgba(238,243,255,.88);
+      backdrop-filter: blur(10px);
+      border-bottom:1px solid rgba(215,224,240,.95);
+    }
+
+    .wrap{max-width:1200px; margin:0 auto; padding:16px;}
+    h1{margin:0; font-size:20px; letter-spacing:.2px}
+    .sub{color:var(--muted); font-size:13px; margin-top:6px; line-height:1.35}
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:12px;
+      margin-top:12px;
+    }
+    @media (min-width: 980px){
+      .grid{grid-template-columns: 420px 1fr;}
+    }
+
+    .panel{
+      background: linear-gradient(180deg, var(--panel), var(--panel2));
+      border:1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+
+    .panel h2{
+      margin:0; padding:12px 14px;
+      font-size:14px;
+      color: var(--text);
+      border-bottom:1px solid var(--border);
+      display:flex; align-items:center; justify-content:space-between;
+      background: rgba(255,255,255,.6);
+    }
+
+    .panel .content{padding:12px 14px;}
+
+    label{display:block; font-size:12px; color:var(--muted); margin:10px 0 6px;}
+
+    input[type="text"], select{
+      width:100%;
+      padding:10px 10px;
+      border-radius: 10px;
+      border:1px solid var(--border);
+      background: #ffffff;
+      color: var(--text);
+      outline:none;
+    }
+
+    input[type="text"]:focus, select:focus{
+      border-color: rgba(37,99,235,.85);
+      box-shadow: 0 0 0 3px rgba(37,99,235,.18);
+    }
+
+    .row{display:grid; grid-template-columns:1fr; gap:10px;}
+    @media (min-width: 520px){ .row.two{grid-template-columns:1fr 1fr;} }
+
+    .btns{display:flex; gap:10px; flex-wrap:wrap; margin-top:12px}
+
+    button{
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.85);
+      color: var(--text);
+      padding:10px 12px;
+      border-radius: 10px;
+      cursor:pointer;
+      font-weight:600;
+      font-size:13px;
+    }
+
+    button.primary{
+      background: rgba(37,99,235,.10);
+      border-color: rgba(37,99,235,.35);
+    }
+
+    button.danger{
+      background: rgba(225,29,72,.10);
+      border-color: rgba(225,29,72,.30);
+    }
+
+    button:disabled{opacity:.55; cursor:not-allowed}
+
+    .note{color:var(--muted); font-size:12px; line-height:1.4; margin-top:10px}
+
+    .pillset{display:flex; gap:8px; flex-wrap:wrap}
+
+    .pill{
+      display:inline-flex; align-items:center; gap:6px;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.8);
+      padding:7px 10px;
+      border-radius: 999px;
+      font-size:12px;
+      color: var(--text);
+      user-select:none;
+      cursor:pointer;
+    }
+
+    .pill input{accent-color: var(--accent); cursor:pointer}
+
+    .pill.on{
+      border-color: rgba(16,185,129,.45);
+      background: rgba(16,185,129,.10);
+    }
+
+    .split{
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      margin-top:10px;
+    }
+
+    .muted{color:var(--muted)}
+
+    .resultsTop{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:10px; flex-wrap:wrap;
+      padding:12px 14px;
+      border-bottom:1px solid var(--border);
+      background: rgba(255,255,255,.6);
+    }
+
+    .cards{
+      padding: 12px 14px 14px;
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+    @media (min-width: 740px){
+      .cards{grid-template-columns: 1fr 1fr;}
+    }
+
+    .card{
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.85);
+      border-radius: 14px;
+      padding: 12px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+
+    .cardTop{display:flex; align-items:flex-start; justify-content:space-between; gap:10px}
+
+    .name{
+      font-weight:800;
+      font-size:14px;
+      line-height:1.2;
+    }
+
+    .meta{
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.35;
+      margin-top:4px;
+    }
+
+    .tags{display:flex; flex-wrap:wrap; gap:6px; margin-top:6px}
+
+    .tag{
+      font-size:11px;
+      padding:4px 8px;
+      border-radius: 999px;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.9);
+      color: var(--text);
+    }
+
+    .tag.good{border-color: rgba(16,185,129,.45); background: rgba(16,185,129,.10);}
+    .tag.warn{border-color: rgba(245,158,11,.45); background: rgba(245,158,11,.12);}
+    .tag.bad{border-color: rgba(225,29,72,.40); background: rgba(225,29,72,.10);}
+
+    .statgrid{
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap:6px;
+      margin-top:6px;
+    }
+    @media (min-width: 520px){
+      .statgrid{grid-template-columns: repeat(7, 1fr);}
+    }
+
+    .stat{
+      border:1px solid var(--border);
+      background: rgba(248,250,255,.95);
+      border-radius: 10px;
+      padding: 6px 8px;
+      text-align:center;
+    }
+
+    .stat .k{font-size:10px; color:var(--muted)}
+    .stat .v{font-size:12px; font-weight:800; margin-top:2px}
+
+    .desc{
+      margin-top: 8px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(215,224,240,.95);
+      background: rgba(255,255,255,.7);
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .desc .label{
+      color: var(--muted);
+      font-weight: 700;
+      margin-right: 6px;
+    }
+
+    .buildBox{
+      border-top: 1px dashed rgba(71,85,105,.35);
+      padding-top:10px;
+    }
+
+    .pager{
+      display:flex; align-items:center; justify-content:center; gap:10px;
+      padding: 12px 14px 14px;
+      border-top:1px solid var(--border);
+      flex-wrap:wrap;
+    }
+
+    .small{font-size:12px}
+
+    .loading{
+      padding: 12px 14px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .sep{
+      height:1px; background: rgba(215,224,240,.95); margin: 10px 0;
+    }
+
+    .kbd{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      font-size: 11px;
+      padding: 2px 6px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.9);
+      border-radius: 8px;
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+  <script src="./out.data.js"></script>
+  <script src="./build.tags.js"></script>
+
+  <header>
+    <div class="wrap">
+      <h1>Inagle 検索</h1>
+      <div class="sub">
+        サーバ不要（index.html単体）。out.data をページ内に貼り付けて、出やすいビルドタイプ（6種）の目印を付けて検索できます。<br />
+        <span class="muted small">※ 目印は localStorage に保存。必要なら <span class="kbd">build.tags.js</span> と統合してエクスポートできます（インポート無し）。</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="grid">
+      <section class="panel" aria-label="検索条件">
+        <h2>
+          <span>拡張検索</span>
+          <span class="muted small" id="statusText">読み込み中…</span>
+        </h2>
+        <div class="content">
+          <label for="qName">名前（部分一致）</label>
+          <input id="qName" type="text" placeholder="例：円堂 / ふぶき / Endou" />
+
+          <div class="row two">
+            <div>
+              <label for="qPos">ポジション</label>
+              <select id="qPos">
+                <option value="">(すべて)</option>
+                <option value="GK">GK</option>
+                <option value="DF">DF</option>
+                <option value="MF">MF</option>
+                <option value="FW">FW</option>
+              </select>
+            </div>
+            <div>
+              <label for="qAttr">属性</label>
+              <select id="qAttr">
+                <option value="">(すべて)</option>
+                <option value="風">風</option>
+                <option value="林">林</option>
+                <option value="火">火</option>
+                <option value="山">山</option>
+              </select>
+            </div>
+          </div>
+
+          <label for="qStatType">ステータスタイプ（Lv50の完全一致）</label>
+          <select id="qStatType">
+            <option value="">(すべて)</option>
+          </select>
+          <div class="note" style="margin-top:6px">
+            ※ 付属テキスト（FWタイプ1等）に沿って表示しています。未定義パターンは「不明」扱いです。
+          </div>
+
+          <label for="qTeam">チーム（部分一致）</label>
+          <input id="qTeam" type="text" placeholder="例：雷門 / エイリア / 世宇子 など" />
+
+          <div class="sep"></div>
+
+          <label>出やすいビルドタイプ（6種）</label>
+          <div class="note" style="margin-top:0">
+            検索条件：<b>OR</b>（どれか1つでも目印があればヒット） / <b>AND</b>（全部に目印があるものだけ）を選べます。
+          </div>
+
+          <label>一致方式</label>
+          <div class="pillset" id="modePills" role="radiogroup" aria-label="一致方式">
+            <label class="pill on"><input type="radio" name="buildMode" value="OR" checked /> OR（どれか）</label>
+            <label class="pill"><input type="radio" name="buildMode" value="AND" /> AND（すべて）</label>
+          </div>
+
+          <label>ビルドタイプ（目印から検索）</label>
+          <div class="pillset" id="buildPills"></div>
+
+          <div class="btns">
+            <button class="primary" id="btnSearch">検索</button>
+            <button id="btnClearBuildCond">ビルド条件クリア</button>
+            <button id="btnReset">条件リセット</button>
+          </div>
+
+          <div class="note">
+            ※ 目印は結果カードから付けられます（localStorageに保存）<br />
+            ※ インポートは無し（古いファイルは手動破棄・配置）
+          </div>
+
+          <div class="sep"></div>
+
+          <label>build.tags.js へエクスポート（手動管理ファイルに統合）</label>
+          <div class="note" style="margin-top:0">
+            build.tags.js（手動）＋ localStorage（目印）をマージして、新しい build.tags.js をダウンロードします。<br />
+            ダウンロード後、既存の build.tags.js は手動で差し替えてください。
+          </div>
+          <div class="btns">
+            <button class="primary" id="btnExportBuild">build.tags.js をエクスポート</button>
+            <button class="danger" id="btnClearAllBuild">全選手の目印を全削除（localStorage）</button>
+          </div>
+          <div class="note">※ out.data 自体は書き換えません。</div>
+        </div>
+      </section>
+
+      <section class="panel" aria-label="検索結果">
+        <div class="resultsTop">
+          <div>
+            <div class="muted small">結果: <span id="resultCount">-</span></div>
+            <div class="muted small">Page <span id="pageNow">-</span></div>
+          </div>
+          <div class="split" style="margin:0; justify-content:flex-end;">
+            <div class="muted small">表示件数</div>
+            <div class="pillset" id="pageSizePills">
+              <label class="pill on"><input type="radio" name="pageSize" value="24" checked />24</label>
+              <label class="pill"><input type="radio" name="pageSize" value="48" />48</label>
+              <label class="pill"><input type="radio" name="pageSize" value="96" />96</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="loading" id="loadingBox">読み込み中…</div>
+        <div class="cards" id="cards" hidden></div>
+
+        <div class="pager">
+          <button id="btnPrev">← 前へ</button>
+          <span class="small">Page <span id="pageMid">-</span></span>
+          <button id="btnNext">次へ →</button>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const BUILD_TYPES = [
+      { key: "正義", color: "good" },
+      { key: "テンション", color: "good" },
+      { key: "必殺", color: "warn" },
+      { key: "カウンター", color: "warn" },
+      { key: "キズナ", color: "good" },
+      { key: "ラフプレー", color: "bad" },
+    ];
+
+    // ステータス順（要望どおり）
+    // キック / コントロール / テクニック / インテリジェンス / プレッシャー / フィジカル / アジリティ
+    // シグネチャ順：kick-control-technique-intelligence-pressure-physical-agility
+    const STATUS_TYPE_MAP = new Map(Object.entries({
+      "104-112-109-100-91-92-85": "MFタイプ1",
+      "100-115-116-104-88-85-85": "MFタイプ2",
+      "121-115-105-93-88-85-85": "FWタイプ1",
+      "114-112-102-100-91-88-85": "FWタイプ3",
+      "90-94-95-114-102-105-91": "DFタイプ2",
+      "90-97-91-97-98-105-111": "GKタイプ1",
+      "117-112-102-90-84-82-81": "FWタイプ2",
+      "97-112-112-100-84-82-81": "MFタイプ3",
+      "110-108-98-97-88-85-81": "FWタイプ4",
+      "100-108-105-97-88-88-81": "MFタイプ4",
+      "86-90-91-110-98-102-88": "DFタイプ3",
+      "86-94-88-93-95-102-107": "GKタイプ2",
+      "86-94-88-93-98-102-104": "GKタイプ3",
+      "83-86-84-117-102-105-88": "DFタイプ1",
+      "93-108-109-97-81-78-78": "MFタイプ5",
+      "114-108-98-86-81-78-78": "FWタイプ5",
+      "107-104-95-93-84-82-78": "FWタイプ6",
+      "97-104-102-93-84-85-78": "MFタイプ6",
+      "83-86-88-107-95-99-85": "DFタイプ4",
+      "83-90-84-90-95-99-101": "GKタイプ4",
+      "79-83-81-114-98-102-85": "DFタイプ5",
+      "83-90-84-90-91-99-104": "GKタイプ5",
+      "104-101-91-90-81-78-75": "モブFWタイプ2",
+      "93-101-98-90-81-82-75": "モブMFタイプ2",
+      "110-104-95-83-77-75-75": "モブFWタイプ1",
+      "90-104-105-93-77-75-75": "モブMFタイプ1",
+      "79-83-84-104-91-95-81": "モブDFタイプ2",
+      "76-79-77-110-95-99-81": "モブDFタイプ1",
+      "79-86-81-86-88-95-101": "モブGKタイプ1",
+      "79-86-81-86-91-95-98": "モブGKタイプ2",
+    }));
+
+    // セレクトボックスの並び順（要望どおり）
+    // FW -> MF -> DF -> GK -> モブFW -> モブMF -> モブDF -> モブGK
+    const STATUS_TYPE_ORDER = [
+      "FWタイプ1","FWタイプ2","FWタイプ3","FWタイプ4","FWタイプ5","FWタイプ6",
+      "MFタイプ1","MFタイプ2","MFタイプ3","MFタイプ4","MFタイプ5","MFタイプ6",
+      "DFタイプ1","DFタイプ2","DFタイプ3","DFタイプ4","DFタイプ5",
+      "GKタイプ1","GKタイプ2","GKタイプ3","GKタイプ4","GKタイプ5",
+      "モブFWタイプ1","モブFWタイプ2",
+      "モブMFタイプ1","モブMFタイプ2",
+      "モブDFタイプ1","モブDFタイプ2",
+      "モブGKタイプ1","モブGKタイプ2",
+    ];
+
+    const LS_KEY = "INAGLE_BUILD_TAGS_V1";
+    const $ = (id) => document.getElementById(id);
+
+    function norm(s){ return String(s ?? "").replace(/\s+/g, " ").trim().toLowerCase(); }
+    function includesLoose(hay, needle){ if (!needle) return true; return norm(hay).includes(norm(needle)); }
+    function safeArr(x){ return Array.isArray(x) ? x : (x ? [x] : []); }
+    function noKey(no){ return `no:${no}`; }
+
+    function statSignature(stats){
+      const keys = ["kick","control","technique","intelligence","pressure","physical","agility"];
+      if (!stats) return "";
+      const vals = keys.map(k => stats[k]);
+      if (vals.some(v => typeof v !== "number")) return "";
+      return vals.join("-");
+    }
+
+    function statusTypeNameFromPlayer(p){
+      const sig = statSignature(p.stats);
+      if (!sig) return "";
+      return STATUS_TYPE_MAP.get(sig) || "不明";
+    }
+
+    function getBaseBuildTags(){
+      const base = (window.OUT_BUILD_TAGS && typeof window.OUT_BUILD_TAGS === "object") ? window.OUT_BUILD_TAGS : {};
+      return base;
+    }
+    function getLocalBuildTags(){
+      try {
+        const s = localStorage.getItem(LS_KEY);
+        if (!s) return {};
+        const parsed = JSON.parse(s);
+        return (parsed && typeof parsed === "object") ? parsed : {};
+      } catch { return {}; }
+    }
+    function setLocalBuildTags(obj){ localStorage.setItem(LS_KEY, JSON.stringify(obj)); }
+
+    function mergeBuildTagsUnion(base, local){
+      const out = {};
+      const keys = new Set([...Object.keys(base), ...Object.keys(local)]);
+      for (const k of keys){
+        const b = safeArr(base[k]);
+        const l = safeArr(local[k]);
+        out[k] = [...new Set([...b, ...l])];
+      }
+      return out;
+    }
+
+    function renderPillState(container){
+      container.querySelectorAll(".pill").forEach(p => {
+        const input = p.querySelector("input");
+        if (!input) return;
+        if (input.type === "radio") p.classList.toggle("on", input.checked);
+        if (input.type === "checkbox") p.classList.toggle("on", input.checked);
+      });
+    }
+
+    function escapeHtml(s){
+      return String(s ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function downloadText(filename, text){
+      const blob = new Blob([text], {type: "text/javascript;charset=utf-8"});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    const state = {
+      data: [],
+      baseBuild: {},
+      localBuild: {},
+      mergedBuild: {},
+      filtered: [],
+      page: 1,
+      pageSize: 24,
+      selectedBuildTypes: new Set(),
+      buildMode: "OR",
+      statusTypeCounts: [],
+    };
+
+    function initBuildPills(){
+      const box = $("buildPills");
+      box.innerHTML = "";
+      for (const t of BUILD_TYPES){
+        const lab = document.createElement("label");
+        lab.className = "pill";
+        lab.innerHTML = `<input type="checkbox" value="${t.key}"> ${t.key}`;
+        box.appendChild(lab);
+      }
+      box.addEventListener("change", () => {
+        state.selectedBuildTypes = new Set(
+          Array.from(box.querySelectorAll('input[type="checkbox"]:checked')).map(i => i.value)
+        );
+      });
+      renderPillState(box);
+      box.addEventListener("click", () => setTimeout(() => renderPillState(box), 0));
+    }
+
+    function initModePills(){
+      const box = $("modePills");
+      box.addEventListener("change", () => {
+        const v = box.querySelector('input[name="buildMode"]:checked')?.value || "OR";
+        state.buildMode = v;
+        renderPillState(box);
+      });
+      renderPillState(box);
+      box.addEventListener("click", () => setTimeout(() => renderPillState(box), 0));
+    }
+
+    function initPageSizePills(){
+      const box = $("pageSizePills");
+      box.addEventListener("change", () => {
+        const v = Number(box.querySelector('input[name="pageSize"]:checked')?.value || 24);
+        state.pageSize = [24,48,96].includes(v) ? v : 24;
+        state.page = 1;
+        renderPillState(box);
+        render();
+      });
+      renderPillState(box);
+      box.addEventListener("click", () => setTimeout(() => renderPillState(box), 0));
+    }
+
+    function initButtons(){
+      $("btnSearch").addEventListener("click", () => { state.page = 1; applyFilters(); render(); });
+      $("btnReset").addEventListener("click", () => resetConditions());
+      $("btnClearBuildCond").addEventListener("click", () => {
+        state.selectedBuildTypes.clear();
+        $("buildPills").querySelectorAll('input[type="checkbox"]').forEach(i => i.checked = false);
+        renderPillState($("buildPills"));
+      });
+
+      $("btnPrev").addEventListener("click", () => { if (state.page > 1){ state.page--; render(); } });
+      $("btnNext").addEventListener("click", () => {
+        const maxPage = Math.max(1, Math.ceil(state.filtered.length / state.pageSize));
+        if (state.page < maxPage){ state.page++; render(); }
+      });
+
+      $("btnClearAllBuild").addEventListener("click", () => {
+        const ok = confirm("localStorage の目印（出やすいビルドタイプ）を全削除します。よろしいですか？");
+        if (!ok) return;
+        localStorage.removeItem(LS_KEY);
+        state.localBuild = {};
+        state.mergedBuild = mergeBuildTagsUnion(state.baseBuild, state.localBuild);
+        applyFilters();
+        render();
+      });
+
+      $("btnExportBuild").addEventListener("click", () => {
+        const base = getBaseBuildTags();
+        const local = getLocalBuildTags();
+        const merged = mergeBuildTagsUnion(base, local);
+
+        const keys = Object.keys(merged).sort((a,b) => {
+          const na = Number(String(a).split(":")[1] || 0);
+          const nb = Number(String(b).split(":")[1] || 0);
+          if (isFinite(na) && isFinite(nb) && na !== nb) return na - nb;
+          return a.localeCompare(b, "ja");
+        });
+
+        const cleaned = {};
+        for (const k of keys){
+          const arr = safeArr(merged[k]).filter(x => BUILD_TYPES.some(t => t.key === x));
+          if (arr.length) cleaned[k] = [...new Set(arr)];
+        }
+
+        const js =
+`// build.tags.js（自動エクスポート）
+// これは index.html が build.tags.js（手動） + localStorage（目印）をマージして生成したファイルです。
+// 置き換え手順：既存 build.tags.js を手動で差し替えてください。
+window.OUT_BUILD_TAGS = ${JSON.stringify(cleaned, null, 2)};
+`;
+        downloadText("build.tags.js", js);
+        alert("build.tags.js をダウンロードしました。既存ファイルは手動で差し替えてください。");
+      });
+    }
+
+    function resetConditions(){
+      $("qName").value = "";
+      $("qPos").value = "";
+      $("qAttr").value = "";
+      $("qStatType").value = "";
+      $("qTeam").value = "";
+
+      state.buildMode = "OR";
+      const modeBox = $("modePills");
+      modeBox.querySelectorAll('input[name="buildMode"]').forEach(i => i.checked = (i.value === "OR"));
+      renderPillState(modeBox);
+
+      state.selectedBuildTypes.clear();
+      $("buildPills").querySelectorAll('input[type="checkbox"]').forEach(i => i.checked = false);
+      renderPillState($("buildPills"));
+
+      state.page = 1;
+      applyFilters();
+      render();
+    }
+
+    function playerHasBuild(no, requiredSet, mode){
+      if (!requiredSet || requiredSet.size === 0) return true;
+      const tags = safeArr(state.mergedBuild[noKey(no)]);
+      const have = new Set(tags);
+      if (mode === "AND"){
+        for (const r of requiredSet) if (!have.has(r)) return false;
+        return true;
+      } else {
+        for (const r of requiredSet) if (have.has(r)) return true;
+        return false;
+      }
+    }
+
+    function applyFilters(){
+      const qName = $("qName").value;
+      const qPos  = $("qPos").value;
+      const qAttr = $("qAttr").value;
+      const qTeam = $("qTeam").value;
+      const qStatTypeName = $("qStatType").value;
+
+      const out = [];
+      for (const p of state.data){
+        if (qName && !(includesLoose(p.name, qName) || includesLoose(p.series, qName))) continue;
+        if (qPos && (p.position || "") !== qPos) continue;
+        if (qAttr && (p.attribute || "") !== qAttr) continue;
+
+        if (qTeam){
+          const teams = safeArr(p.teams).join(" ");
+          if (!includesLoose(teams, qTeam)) continue;
+        }
+
+        if (qStatTypeName){
+          const stName = statusTypeNameFromPlayer(p);
+          if (stName !== qStatTypeName) continue;
+        }
+
+        if (!playerHasBuild(p.no, state.selectedBuildTypes, state.buildMode)) continue;
+        out.push(p);
+      }
+
+      state.filtered = out;
+      const maxPage = Math.max(1, Math.ceil(state.filtered.length / state.pageSize));
+      if (state.page > maxPage) state.page = maxPage;
+    }
+
+    function renderStatusTypeOptions(){
+      const sel = $("qStatType");
+      const current = sel.value;
+
+      sel.innerHTML = `<option value="">(すべて)</option>`;
+
+      const countMap = new Map(state.statusTypeCounts.map(x => [x.name, x.count]));
+      for (const name of STATUS_TYPE_ORDER){
+        const c = countMap.get(name);
+        if (!c) continue;
+        const opt = document.createElement("option");
+        opt.value = name;
+        opt.textContent = `${name}（${c}）`;
+        sel.appendChild(opt);
+      }
+
+      if (countMap.get("不明")){
+        const opt = document.createElement("option");
+        opt.value = "不明";
+        opt.textContent = `不明（${countMap.get("不明")}）`;
+        sel.appendChild(opt);
+      }
+
+      if ([...sel.options].some(o => o.value === current)) sel.value = current;
+    }
+
+    function buildTagChipsForPlayer(no){
+      const tags = safeArr(state.mergedBuild[noKey(no)]);
+      if (!tags.length) return "";
+      return tags.map(t => {
+        const meta = BUILD_TYPES.find(x => x.key === t);
+        const cls = meta?.color || "";
+        return `<span class="tag ${cls}">${t}</span>`;
+      }).join("");
+    }
+
+    function renderCards(){
+      const box = $("cards");
+      box.innerHTML = "";
+
+      const start = (state.page - 1) * state.pageSize;
+      const end = start + state.pageSize;
+      const slice = state.filtered.slice(start, end);
+
+      for (const p of slice){
+        const card = document.createElement("div");
+        card.className = "card";
+
+        const stats = p.stats || {};
+        const statItems = [
+          ["K", stats.kick],
+          ["C", stats.control],
+          ["T", stats.technique],
+          ["I", stats.intelligence],
+          ["P", stats.pressure],
+          ["F", stats.physical],
+          ["A", stats.agility],
+        ];
+
+        const stName = statusTypeNameFromPlayer(p);
+
+        card.innerHTML = `
+          <div class="cardTop">
+            <div>
+              <div class="name">No.${p.no} ${escapeHtml(p.name)}</div>
+              <div class="meta">
+                ${escapeHtml(p.series || "")}
+                ${p.position ? ` / ${escapeHtml(p.position)}` : ""}
+                ${p.attribute ? ` / ${escapeHtml(p.attribute)}` : ""}
+                ${p.era ? ` / ${escapeHtml(p.era)}` : ""}
+              </div>
+              <div class="tags">
+                ${stName ? `<span class="tag">${escapeHtml(stName)}</span>` : ""}
+                ${p.category ? `<span class="tag">${escapeHtml(p.category)}</span>` : ""}
+                ${p.gender ? `<span class="tag">${escapeHtml(p.gender)}</span>` : ""}
+                ${p.grade ? `<span class="tag">${escapeHtml(p.grade)}</span>` : ""}
+                ${safeArr(p.teams).slice(0,3).map(t => `<span class="tag">${escapeHtml(t)}</span>`).join("")}
+              </div>
+              <div class="tags" style="margin-top:8px">
+                ${buildTagChipsForPlayer(p.no)}
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="muted small">ステータス（Lv50）</div>
+            <div class="statgrid">
+              ${statItems.map(([k,v]) => `
+                <div class="stat">
+                  <div class="k">${k}</div>
+                  <div class="v">${typeof v === "number" ? v : "-"}</div>
+                </div>
+              `).join("")}
+            </div>
+          </div>
+
+          ${p.description ? `
+            <div class="desc" title="${escapeHtml(p.description)}">
+              <span class="label">説明:</span>${escapeHtml(p.description)}
+            </div>
+          ` : ""}
+
+          <div class="buildBox">
+            <div class="muted small">出やすいビルドタイプの目印（保存）</div>
+            <div class="pillset" data-build-for="${p.no}" style="margin-top:8px">
+              ${BUILD_TYPES.map(t => {
+                const checked = safeArr(state.mergedBuild[noKey(p.no)]).includes(t.key);
+                return `<label class="pill ${checked ? "on" : ""}">
+                  <input type="checkbox" value="${t.key}" ${checked ? "checked" : ""} />
+                  ${t.key}
+                </label>`;
+              }).join("")}
+            </div>
+          </div>
+        `;
+
+        const pillset = card.querySelector(`[data-build-for="${p.no}"]`);
+        pillset.addEventListener("change", () => {
+          const selected = Array.from(pillset.querySelectorAll('input[type="checkbox"]:checked')).map(i => i.value);
+
+          const local = getLocalBuildTags();
+          local[noKey(p.no)] = selected;
+          setLocalBuildTags(local);
+
+          state.localBuild = local;
+          state.mergedBuild = mergeBuildTagsUnion(state.baseBuild, state.localBuild);
+
+          renderPillState(pillset);
+
+          if (state.selectedBuildTypes.size > 0){
+            applyFilters();
+            render();
+          } else {
+            render();
+          }
+        });
+        pillset.addEventListener("click", () => setTimeout(() => renderPillState(pillset), 0));
+
+        box.appendChild(card);
+      }
+
+      $("loadingBox").hidden = true;
+      box.hidden = false;
+    }
+
+    function render(){
+      $("resultCount").textContent = String(state.filtered.length);
+      const maxPage = Math.max(1, Math.ceil(state.filtered.length / state.pageSize));
+      $("pageNow").textContent = `${state.page} / ${maxPage}`;
+      $("pageMid").textContent = `${state.page} / ${maxPage}`;
+
+      $("btnPrev").disabled = state.page <= 1;
+      $("btnNext").disabled = state.page >= maxPage;
+
+      renderCards();
+    }
+
+    function boot(){
+      const data = window.OUT_DATA;
+      if (!Array.isArray(data) || data.length === 0){
+        $("statusText").textContent = "out.data.js が読めません（OUT_DATA が空）";
+        $("loadingBox").textContent = "out.data.js の読み込みに失敗しました。";
+        return;
+      }
+
+      state.data = data;
+      state.baseBuild = (window.OUT_BUILD_TAGS && typeof window.OUT_BUILD_TAGS === "object") ? window.OUT_BUILD_TAGS : {};
+      state.localBuild = getLocalBuildTags();
+      state.mergedBuild = mergeBuildTagsUnion(state.baseBuild, state.localBuild);
+
+      const map = new Map();
+      for (const p of state.data){
+        const name = statusTypeNameFromPlayer(p) || "不明";
+        map.set(name, (map.get(name) || 0) + 1);
+      }
+      state.statusTypeCounts = Array.from(map.entries()).map(([name,count]) => ({name,count}));
+
+      renderStatusTypeOptions();
+
+      $("qName").addEventListener("keydown", (e) => { if (e.key === "Enter") { state.page=1; applyFilters(); render(); } });
+      $("qTeam").addEventListener("keydown", (e) => { if (e.key === "Enter") { state.page=1; applyFilters(); render(); } });
+
+      $("statusText").textContent = `読み込み完了: ${state.data.length} 件`;
+      applyFilters();
+      render();
+    }
+
+    initBuildPills();
+    initModePills();
+    initPageSizePills();
+    initButtons();
+    boot();
+  </script>
+</body>
+</html>
